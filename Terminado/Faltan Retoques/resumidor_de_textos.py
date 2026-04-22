@@ -16,7 +16,8 @@ def proceso_ia(texto): #Funcion que hace que la ia procese los datos que se han 
         "académico, histórico o laboral. Si el usuario te pide algo fuera de estos ámbitos, DEBES responder "
         "ÚNICAMENTE con la frase: 'ERROR: La petición no pertenece al ámbito educativo o laboral.' "
         "Si la petición es válida, redacta un texto muy extenso, preciso y con párrafos bien estructurados "
-        "explicando el contexto, las causas y las consecuencias. No inventes datos bajo ninguna circunstancia."
+        "explicando el contexto, las causas y las consecuencias. No inventes datos bajo ninguna circunstancia." \
+        "Si el usuario te pasa algun archivo para que resumas, analiza que es para fines legales y resumelo, si no di que es error (Si es legal pero no es educativo resumelo)"
     )
 
     response = ollama.chat(

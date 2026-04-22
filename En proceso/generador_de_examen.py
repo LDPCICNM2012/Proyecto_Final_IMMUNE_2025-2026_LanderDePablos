@@ -136,4 +136,3 @@ while True:
             historial.append({"role": "assistant", "content": comentario_ia})
 
 
-
