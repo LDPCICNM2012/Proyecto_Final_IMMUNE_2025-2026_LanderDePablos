@@ -67,7 +67,7 @@ try: #El try es para que haga lo que hay abajo y si no va que no pete como un to
         if not destino_archivo.lower().endswith('.docx'):#Basicamente (que esto no lo hago ni yo) es para que el usuario si no pone la terminacion de word .docx la pone automaticamente. Si no sería horrible.
             destino_archivo += '.docx' #La extensión.
         
-        doc.add_heading(f'Apuntes de {nombre}', 0) #Pone titulo al Word con el nombre del usuario.
+        doc.add_heading(f'Resumen de {nombre}', 0) #Pone titulo al Word con el nombre del usuario.
         doc.add_paragraph(Apuntes_finales)#Pone los Apuntes ya procesados por la ia en el Word.
         
         doc.save(destino_archivo) #Destino del archivo que se guardará donde haya escogido el usuario.

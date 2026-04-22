@@ -37,6 +37,7 @@ while True:
         break
     lineas.append(linea)#Mete en la lista de lineas la linea que acabas de escribir
 
+
 notas = "\n".join(lineas) #Esto junta TODAS las lineas escritas en un solo bloque
 time.sleep(1)
 
@@ -57,7 +58,7 @@ if destino_archivo:
 
 
 
-nombre_archivo = f"Notas de {nombre} " #Guardamos el word como Notas de (y el nombre del usuario)
+nombre_archivo = f"Apuntes de {nombre} " #Guardamos el word como Notas de (y el nombre del usuario)
 doc.save(nombre_archivo) #Guardamos el Word
 
 print(f"Se ha exportado correctamente '{nombre_archivo}', Gracias por utilizar mi programa :)") #Fin del programa
