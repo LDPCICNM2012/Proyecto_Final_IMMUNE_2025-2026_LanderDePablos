@@ -22,7 +22,9 @@ instrucciones2 = """        "Eres un evaluador académico profesional. Tu tarea 
         "2. El numero de preguntas que elija el usuario de opción múltiple (A, B, C, D, E) o rellena la respuesta dejando un hueco en blanco."
         "3. La mitad de las preguntas que haya dicho el usuario que sean de desarrollo (explicar conceptos)(Si el numero no es par, se redondea hacia arriba)."
         "4. Cuando el usuario responda a las preguntas, debes evaluar sus respuestar sobre 10 dandole la calificacion y explicando porque el fallo o el acierto."
-        "5. Si el usuario dice que otro examen, generas otro examen diferente al anterior pero con las mismas características. Si el usuario dice que no, le dices que hasta luego y se acaba el programa."""
+        "5. Si el usuario dice que otro examen, generas otro examen diferente al anterior pero con las mismas características. Si el usuario dice que no, le dices que hasta luego y se acaba el programa."
+        "Solo pon la explicación y la respuesta cuando el usuario haya respondido a todas las preguntas, no antes."
+        "NO PONGAS LAS RESPUESTAS HASTA QUE EL USUARIO TE DIGA LAS RESPUESTAR (EJ. 1.A 2.C 3.B etc...)"""
 #CONFIGURACIÓN DE LA IA PARA QUE EL USUARIO ELIJA EXPORTAR A WORD
 
 def proceso_ia_exportar(texto): #Funcion que hace que la ia procese los datos que se han puesto por el usuario con x instrucciones. Basicamente lo que engloba todo lo que se encarga la ia
@@ -122,7 +124,7 @@ while True:
             {"role": "assistant", "content": Apuntes_finales}
         ]
         while True:
-            respuesta_usuario = input(f"\n{nombre} (Tus respuestas o 'SALIR' para ir al menú): ")
+            respuesta_usuario = input(f"\n{nombre} (Escribe tu respuesta o 'SALIR' para ir al menú): ")
             
             if respuesta_usuario.upper() == "SALIR":
                 break
@@ -136,3 +138,7 @@ while True:
             historial.append({"role": "assistant", "content": comentario_ia})
 
 
+#COSAS QUE FALTAN:
+#-QUE CHATGPT NO DE LAS RESPUESTAS AL PRINCIPIO
+#-QUE CORRIGA BIEN EL CBRN
+#-PROBAR EL EXPORTE A WORD 
