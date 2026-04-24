@@ -1,5 +1,6 @@
 #AVISO. Para que este codigo funcione, necesitas tener Ollama con el modelo "qwen2.5-coder:3b" instalado. Aparte, necesitarás un mac por los applescript. Lo siento, ya haré un port para windows.
 #IMPORTS
+from httpcore import stream
 import ollama
 from docx import Document
 import subprocess
@@ -16,7 +17,7 @@ instrucciones1 = """El examen debe tener:
 
 #INSTRUCCIONES PARA LA IA SOBRE CÓMO DEBE SER EL EXAMEN Y LAS RESPUESTA EN EL PROGRAMA
 
-instrucciones2 = """        "Eres un evaluador académico profesional. Tu tarea es crear un examen sobre el tema proporcionado."
+instrucciones2 = """"Eres un evaluador académico profesional. Tu tarea es crear un examen sobre el tema proporcionado."
         "El examen debe tener:"
         "1. Un título que tenga que ver con el tema."
         "2. El numero de preguntas que elija el usuario de opción múltiple (A, B, C, D, E) o rellena la respuesta dejando un hueco en blanco."
@@ -39,12 +40,20 @@ def proceso_ia_exportar(texto): #Funcion que hace que la ia procese los datos qu
             {'role': 'system', 'content': instrucciones},
             {'role': 'user', 'content': f"Hazme un examen sobre: {texto} con las características mencionadas anteriormente."}
         ],
+        stream=True,
         options={
             "temperature": 0.2,  # Bajamos la temperatura a 0.2 para que sea preciso, riguroso y no invente datos.
             "num_predict": 2000  # Aumentado a 2000 para que el texto sea aún más largo y detallado.
         }
     )
-    return response['message']['content'] #"Return" significa devuelve, a si que esto lo que hace es devolver lo que da la ia
+
+    respuesta_completa = ""
+    for chunk in response: 
+        contenido = chunk['message']['content']
+        print(contenido, end='', flush=True) # El truco del tiempo real
+        respuesta_completa += contenido # Vamos acumulando la respuesta completa para devolverla al final
+    print("\n") # Espacio al terminar
+    return respuesta_completa # Devolvemos la respuesta completa para que se guarde en la memoria y se pueda exportar luego a Word.
 
 
 #CONFIGURACIÓN DE LA IA PARA QUE EL USUARIO ELIJA RESPONDER EN EL POROGRAMA
@@ -62,12 +71,20 @@ def proceso_ia_responder(texto): #Funcion que hace que la ia procese los datos q
             {'role': 'system', 'content': instrucciones},
             {'role': 'user', 'content': f"Hazme un examen sobre: {texto} con las características mencionadas anteriormente."}
         ],
+        stream=True,
         options={
             "temperature": 0.2,  # Bajamos la temperatura a 0.2 para que sea preciso, riguroso y no invente datos.
             "num_predict": 2000  # Aumentado a 2000 para que el texto sea aún más largo y detallado.
         }
     )
-    return response['message']['content'] #"Return" significa devuelve, a si que esto lo que hace es devolver lo que da la ia
+    respuesta_completa = ""
+    for chunk in response: 
+        contenido = chunk['message']['content']
+        print(contenido, end='', flush=True) # El truco del tiempo real
+        respuesta_completa += contenido # Vamos acumulando la respuesta completa para devolverla al final
+    print("\n") # Espacio al terminar
+    return respuesta_completa # Devolvemos la respuesta completa para que se guarde en la memoria y se pueda exportar luego a Word.
+
 #-----------------------------------------------PROGRAMA PRINCIPAL-------------------------------------------------
 
 # Variables y AppleScript
@@ -116,13 +133,14 @@ while True:
             print(f"Error al guardar: {e}") #Si hay un error, que te diga pq y donde.
 
     elif destino_examen == "2":
-        Apuntes_finales = proceso_ia_responder(Apuntes_puras) #Esto es lo bueno, integración de ia. Esto es basicamente el "promp" que se manda a la ia. Es como si fueras a chatgpt y le mandaras lo que has escrito + todas las instrucciones de arriba pero mas simplificado y user-friendly.
-        print("\n[IA] Aqui esta tu examen. Recuerda, el objetivo es aprobar, no suspender:\n")
-        print(Apuntes_finales)
+        Apuntes_finales = proceso_ia_responder(Apuntes_puras) 
+        print("\n[IA] Aquí está tu examen. Recuerda, el objetivo es aprobar, no suspender:\n")
+        
         historial = [
             {"role": "system", "content": instrucciones2},
             {"role": "assistant", "content": Apuntes_finales}
         ]
+
         while True:
             respuesta_usuario = input(f"\n{nombre} (Escribe tu respuesta o 'SALIR' para ir al menú): ")
             
@@ -130,11 +148,20 @@ while True:
                 break
             
             historial.append({"role": "user", "content": respuesta_usuario})
-            print("\n[IA] Corrigiendo...")
+            print("\n[IA] Corrigiendo...\n")
             
-            res_correcion = ollama.chat(model="llama3.2", messages=historial)
-            comentario_ia = res_correcion['message']['content']
-            print(f"\n[IA]: {comentario_ia}")
+            # Llamada con stream para ver la corrección en tiempo real
+            stream_correcion = ollama.chat(model="llama3.2", messages=historial, stream=True)
+            
+            comentario_ia = ""
+            for chunk in stream_correcion:
+                contenido = chunk['message']['content']
+                print(contenido, end='', flush=True)
+                comentario_ia += contenido
+            
+            print("\n") # Salto de línea al terminar la corrección
+            
+            # Guardamos el comentario en el historial para que la IA recuerde lo que dijo
             historial.append({"role": "assistant", "content": comentario_ia})
 
 

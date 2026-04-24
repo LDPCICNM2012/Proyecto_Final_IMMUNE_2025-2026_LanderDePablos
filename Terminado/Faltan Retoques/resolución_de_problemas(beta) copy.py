@@ -1,4 +1,4 @@
-# AVISO: Requiere Ollama (llama3.2) y macOS para el AppleScript.
+#AVISO. Para que este codigo funcione, necesitas tener Ollama con el modelo "qwen2.5-coder:3b" instalado. Aparte, necesitarás un mac por los applescript. Lo siento, ya haré un port para windows.
 import ollama 
 from docx import Document
 import subprocess
@@ -48,6 +48,8 @@ ascript = f'''
 
 #BUCLE PRINCIPAL
 print(f"Bienvenido {nombre} al Ayudador ayudadoso.") #Presentación
+print("Escribe tu pregunta o preocupación.") #Presentación
+
 
 while True: #Mientras el porgrama esté corriendo:
     pregunta = input(f"{nombre}: ") #Preguntamos el nombre
