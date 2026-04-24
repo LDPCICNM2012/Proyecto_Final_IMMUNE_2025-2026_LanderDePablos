@@ -1,74 +1,87 @@
-#AVISO. Para que este codigo funcione, necesitas tener Ollama con el modelo "qwen2.5-coder:3b" instalado. Aparte, necesitarás un mac por los applescript. Lo siento, ya haré un port para windows.
-#Resolución de problemas.py
-#Imports
+# AVISO: Requiere Ollama (llama3.2) y macOS para el AppleScript.
 import ollama 
 from docx import Document
 import subprocess
-import time
 
-conversacion = [] #Esto es una lista que guarda la conversación(como la memoria de chatgpt)
-run_conversacion = True #Esto es una variable que dice que la conversación esta iniciada.
+# --- CONFIGURACIÓN INICIAL ---
+conversacion = [] # Aquí guardaremos toda la conversación para que la IA tenga memoria y para exportarla luego a Word.
+nombre = input("¿Cual es tu nombre?: ") #Preguntamos el nombre para ponerlo en el Word
+doc = Document() #Creamos el word
 
-nombre = input("¿Cual es tu nombre?: ") #Preguntamos nombre de usuario para ponerlo en el word
-doc = Document() #Creamos el documento de Word
+instrucciones = ( #Ponemos las intrucciones que le vamos a dar a la ia
+    "Eres un Solucionador de Problemas de alto rendimiento. "
+    "Tu enfoque es: Analizar el problema -> Identificar la causa -> Dar solución técnica/práctica. -> Dar consejos para evitarlo en el futuro. "
+    "Responde siempre con estructura de puntos clave y da conversación para acompañar y dar consejos."
+)
 
-
-ascript = f'''
-    set thePath to choose file name with prompt "Seleccione dónde guardar el archivo Word:" default name "Apuntes de {nombre}.docx"
-    return POSIX path of thePath
-''' #Script de Apple necesario para que salga el menú donde puedas elegir donde guardar el Word. Lo de nombre es para que el Word de llame Apuntes de y tu nombre especificado anteriormaente.
-
-print("Bienvenido al Ayudador ayudadoso que ayuda a los necesitados a ayudar sus problemas ayudandose.")#Intro épica
-while run_conversacion == True: #Mientras la conversación esta iniciada:_
-    pregunta = input("¿Cuál es tu problema? (Escribe 'FIN' para terminar): ")
-    if pregunta.upper() == "FIN": #Cuando el usuario escriba "FIN" Termina la conversación
-        run_conversacion = False
-        break
-    print("\n[IA] Generando respuesta...") #Pone en la terminal que la ia esta resumiendo el texto. El \n es para que haga un salto de linea y quede todo ordenadito
-    conversacion.append({'role': 'user', 'content': pregunta})
+#Funcion de la IA para responder con memoria y en tiempo real
+def proceso_ia_responder(historial_mensajes): #Nombramos a la funcion y le pasamos la memoria de la conversación
+    print("\n[IA] Pensando...", end="\r")
     
-    instrucciones = ( #Instrucciones que se le da a la IA para saber como actuar
-        "Eres un Solucionador de Problemas de alto rendimiento. "
-        "Tu enfoque es: Analizar el problema -> Identificar la causa -> Dar solución técnica/práctica aunque puedes poner comentarios para ser mas resolutivo. "
-        "Analiza por qué y da un plan de acción real para la ocasion. "
-        "Responde siempre con estructura adecuada al problema diciendo puntos clave."
-        "Tambien da un poco de conversación para que el usuario se sienta acompañado, pero sin perder el enfoque de resolver el problema. "
-    )
-    
+    # Activamos stream=True para que el texto salga poco a poco
     response = ollama.chat(
-        model="qwen2.5-coder:1.5b", #El modelo de ia que se va a utilizar
+        model="llama3.2", #Modelo de ia que vamos a usar
         messages=[
-            {'role': 'system', 'content': instrucciones}, #Le damos las instrucciones de antes
-            *conversacion
+            {'role': 'system', 'content': instrucciones},
+            *historial_mensajes # Aquí le pasamos toda la memoria
         ],
-        options={
-            "temperature": 0.3,
-            "num_predict": 1000
-        }
+        options={"temperature": 0.2, "num_predict": 1000}, #Bajamos la temperatura para que sea más preciso y aumentamos num_predict para que sea más largo, aunque con 1000 ya es suficiente para respuestas detalladas.
+        stream=True
     )
+
+    respuesta_completa = ""
+    print("[IA]: ", end="") # Etiqueta para la respuesta
     
-    respuesta_ia = response['message']['content'] #Esta es la respuesta de la ia que guardamos en la variable respuesta_ia
-    print(f"[IA] {respuesta_ia}") #Enseñamos la respuesta de
-    conversacion.append({'role': 'assistant', 'content': respuesta_ia}) #Guardamos la respuesta de la ia en la lista de conversacion.
+    for chunk in response: 
+        contenido = chunk['message']['content']
+        print(contenido, end='', flush=True) # El truco del tiempo real
+        respuesta_completa += contenido # Vamos acumulando la respuesta completa para devolverla al final
+    
+    print("\n") # Espacio al terminar
+    return respuesta_completa # Devolvemos la respuesta completa para que se guarde en la memoria y se pueda exportar luego a Word.
 
-#Parte de Word.
-try: #El try es para que haga lo que hay abajo y si no va que no pete como un tonto si no que te diga pq. 
-    print("Abriendo menú para que guardes tu archivo...")
-    destino_archivo = subprocess.check_output(['osascript', '-e', ascript]).decode('utf-8').strip() #Aqui llamamos al applescript para que salga el menú.
+#AppleScript para macOS
+ascript = f'''
+    set thePath to choose file name with prompt "Seleccione dónde guardar el archivo Word:" default name "Conversación de {nombre}.docx"
+    return POSIX path of thePath
+'''
 
-    if destino_archivo:
-        if not destino_archivo.lower().endswith('.docx'):#Basicamente (que esto no lo hago ni yo) es para que el usuario si no pone la terminacion de word .docx la pone automaticamente. Si no sería horrible.
-            destino_archivo += '.docx' #La extensión.
+#BUCLE PRINCIPAL
+print(f"Bienvenido {nombre} al Ayudador ayudadoso.") #Presentación
+
+while True: #Mientras el porgrama esté corriendo:
+    pregunta = input(f"{nombre}: ") #Preguntamos el nombre
+    
+    if pregunta.upper() == "FIN": #Cuando el usuario escriba FIN:
+        break #Terminamos el programa
         
-        doc.add_heading(f'Conversación de {nombre}', 0) #Pone titulo al Word con el nombre del usuario.
-        for mensaje in conversacion:
-                rol = "Tú" if mensaje['role'] == 'user' else "IA"
-                # Añadimos un párrafo por cada intervención
-                p = doc.add_paragraph()
-                p.add_run(f"{rol}: ").bold = True # Nombre en negrita
-                p.add_run(mensaje['content']) # Contenido en texto normal
-        
-        doc.save(destino_archivo) #Destino del archivo que se guardará donde haya escogido el usuario.
-        print(f"\n Éxito: Archivo guardado en {destino_archivo}")#Confirmación de que se ha guardado el archivo.")
-except Exception as e:
-    print(f"Error al guardar: {e}") #Si hay un error, que te diga pq y donde.
+    conversacion.append({'role': 'user', 'content': pregunta}) #Se guarda la pregunta del usuario.
+    
+    res_ia = proceso_ia_responder(conversacion) #Llamamos a la ia para que responda.
+    
+    conversacion.append({'role': 'assistant', 'content': res_ia}) #Guardamos la respuesta de la ia en la conversación 
+
+#EXPORTACIÓN A WORD
+if conversacion: #Si hay conversación para guardar:
+    try:
+        print("\n--- Guardando conversación ---") #Mensaje de que se esta guardando 
+        destino_archivo = subprocess.check_output(['osascript', '-e', ascript]).decode('utf-8').strip() #Ejecutamos el Ascript para que salga el menú de guardado
+
+        if destino_archivo: #Si el usuario elije un destino(que obiamente lo hará):
+            if not destino_archivo.lower().endswith('.docx'): #Nos aseguramos de que el archivo tenga la extensión .docx
+                destino_archivo += '.docx' #Si no la tiene, se la añadimos automáticamente
+            
+            doc.add_heading(f'Conversación de {nombre}', 0) #Añadimos un título al Word con el nombre del usuario
+            
+            for mensaje in conversacion: #Por cada mensaje en la conversación:
+                rol = "Tú" if mensaje['role'] == 'user' else "IA" #Ponemos "Tú" para los mensajes del usuario y "IA" para los mensajes de la inteligencia artificial
+                p = doc.add_paragraph()#Añadimos un nuevo párrafo para cada mensaje
+                p.add_run(f"{rol}: ").bold = True 
+                p.add_run(mensaje['content'])#Añadimos el contenido del mensaje al párrafo
+            
+            doc.save(destino_archivo)#Guardamos el documento en la ruta establecida
+            print(f"Éxito: Guardado en {destino_archivo}") #Mensaje de confirmación
+    except Exception as e:
+        print(f" Error al guardar: {e}") #Si hay error de guardado, que diga el error
+else:
+    print("No hubo conversación para guardar.") #Si no hay conversación para guardar se lo decimos al usuario.
